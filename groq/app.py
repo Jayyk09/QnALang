@@ -2,8 +2,8 @@ import streamlit as st
 import os
 from langchain_groq import ChatGroq
 from langchain_community.document_loaders import WebBaseLoader
-from langchain_community.embeddings import OllamaEmbeddingsfrom 
 from langchain_openai import OpenAIEmbeddings
+#oollama
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
@@ -16,11 +16,11 @@ from langchain_core.prompts import PromptTemplate
 
 load_dotenv()
 
-# Load the API key from the environment
-os.environ['OPENAI_API_KEY'] = os.environ.get("OPENAI_API_KEY")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+#load the api keys from secrets.toml
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
-if not GROQ_API_KEY or not os.environ.get("OPENAI_API_KEY"):
+if not GROQ_API_KEY or not OPENAI_API_KEY:
     st.error("Missing API keys. Please check your environment variables.")
 
 st.title("GROQ Chat w Llama3")
@@ -28,11 +28,18 @@ st.title("GROQ Chat w Llama3")
 def vectorEmbedding():
     if "vector" not in st.session_state:
         # create embeddings
-        st.session_state.embeddings = OpenAIEmbeddings()  # Consistent naming
+        st.session_state.embeddings = OpenAIEmbeddings(api_key=OPENAI_API_KEY)  # Consistent naming
         # load documents
-        st.session_state.loader = PyPDFDirectoryLoader("./all_docs")
+        st.session_state.loader = PyPDFDirectoryLoader("../all_docs")
         # load the documents
         st.session_state.docs = st.session_state.loader.load()
+
+        # Check if the loader has found any documents
+        if not st.session_state.docs:
+            st.error("No documents loaded. Please check the file path or document format.")
+        else:
+            st.write(f"Loaded {len(st.session_state.docs)} documents.")
+
         # split the text with a chunk size of 1000 and overlap of 200
         st.session_state.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
@@ -40,6 +47,10 @@ def vectorEmbedding():
         )
         # create the final docs with the text splitter
         st.session_state.final_docs = st.session_state.text_splitter.split_documents(st.session_state.docs[:20])
+        st.write(f"Number of final documents: {len(st.session_state.final_docs)}")
+        if not st.session_state.final_docs:
+            st.error("No documents to create embeddings from.")
+
         # vector store the embeddings
         st.session_state.vectors = FAISS.from_documents(st.session_state.final_docs, st.session_state.embeddings)
 
