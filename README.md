@@ -28,7 +28,7 @@ Before running the application, ensure you have the following:
 Install the required packages via pip:
 
 ```bash
-pip install streamlit langchain faiss-cpu python-dotenv
+pip install -r requirements.txt
 ```
 
 ## Setting Up API Keys
